@@ -123,6 +123,20 @@ def run(dataset_class, use_egnn=True, use_ngnn=True, use_3sets_linegraph=False, 
     model_class = ENGNN
     main(logger_name, dataset_class, dataloader_class, model_class, model_parameter_dict)
 
+    logger_name = dataset_class.__name__ + f"__Transformer_{model_name}__k={topppr_k}__alpha={alpha}__baseline"
+    model_parameter_dict = {"n_hidden": 128,
+                            "n_classes": 1,
+                            "n_layers": 2,
+                            "activation": torch.nn.ReLU(),
+                            "dropout": 0.5,
+                            "structure": "Transformer",
+                            "node_count": dataset_class.get_node_count(),
+                            "use_egnn": use_egnn,
+                            "use_ngnn": use_ngnn}
+    dataloader_class = GNNDataloader
+    model_class = ENGNN
+    main(logger_name, dataset_class, dataloader_class, model_class, model_parameter_dict)
+
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ import os
 import pytorch_lightning as pl
 from torch import nn
 from dgl.nn.pytorch import GraphConv, SGConv, SAGEConv, GATConv, HeteroGraphConv, EdgeWeightNorm, RelGraphConv, GINConv, \
-    PNAConv, ChebConv, AGNNConv, GATv2Conv
+    PNAConv, ChebConv, AGNNConv, GATv2Conv, HGTConv
 import scipy.sparse as sp
 import torch
 import numpy as np
@@ -116,6 +116,13 @@ class GNN(BaseModel):
             # hidden layers
             for i in range(n_layers - 1):
                 self.layers.append(GATv2Conv(n_hidden, n_hidden, num_heads=1, feat_drop=dropout, activation=activation))
+        elif structure == "Transformer":
+            self.layers.append(HGTConv(in_nfeats, n_hidden, num_heads=1, dropout=dropout, num_ntypes=1, num_etypes=1))
+            self.layers.append(torch.nn.ReLU())
+            # hidden layers
+            for i in range(n_layers - 1):
+                self.layers.append(HGTConv(n_hidden, n_hidden, num_heads=1, dropout=dropout, num_ntypes=1, num_etypes=1))
+                self.layers.append(torch.nn.ReLU())
         elif structure == "FC":
             self.layers.append(torch.nn.Linear(in_nfeats, n_hidden))
             self.layers.append(torch.nn.ReLU())
@@ -162,6 +169,9 @@ class GNN(BaseModel):
                 layer: torch.nn.Linear
             elif type(layer) in [GATConv, GATv2Conv]:
                 h = layer(g, h).mean(1)
+            elif type(layer) == HGTConv:
+                h = layer(g, h, torch.zeros(g.number_of_nodes(), dtype=torch.long).to(g.device),
+                          torch.zeros(g.number_of_edges(), dtype=torch.long).to(g.device))
             elif type(layer) == HeteroGraphConv:
                 h = layer(g, h)
             elif type(layer) == RelGraphConv:
